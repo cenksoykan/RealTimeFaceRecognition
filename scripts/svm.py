@@ -1,36 +1,30 @@
 """
-Auther: Chenxing Ouyang <c2ouyang@ucsd.edu>
-
 This file is part of Cogs 109 Project.
 
 Summary: SVM methods using Scikit
 
 """
 
-import cv2
-import os
-import numpy as np
-from scipy import ndimage
 from time import time
 import warnings
+import numpy as np
 
 with warnings.catch_warnings():
     warnings.simplefilter("ignore")
-    from sklearn.cross_validation import train_test_split
+    from sklearn.model_selection import train_test_split
 
-from sklearn.datasets import fetch_lfw_people
-from sklearn.grid_search import GridSearchCV
-from sklearn.metrics import classification_report
-from sklearn.metrics import confusion_matrix
 from sklearn.decomposition import RandomizedPCA
+from sklearn.model_selection import GridSearchCV
 from sklearn.svm import SVC
 
-import utils as ut
 
-
-def test_SVM(face_profile_data, face_profile_name_index, face_dim, face_profile_names):
+def test_SVM(face_profile_data, face_profile_name_index, face_dim,
+             face_profile_names):
     """
-    Testing: Build the SVM classification modle using the face_profile_data matrix (numOfFace X numOfPixel) and face_profile_name_index array, face_dim is a tuple of the dimension of each image(h,w) Returns the SVM classification modle
+    Testing: Build the SVM classification modle using the face_profile_data matrix (numOfFace X numOfPixel)
+    and face_profile_name_index array, face_dim is a tuple of the dimension of each image(h,w)
+    Returns the SVM classification modle
+
     Parameters
     ----------
     face_profile_data : ndarray (number_of_images_in_face_profiles, width * height of the image)
@@ -49,43 +43,46 @@ def test_SVM(face_profile_data, face_profile_name_index, face_dim, face_profile_
     clf : theano object
         The trained SVM classification model
 
-    pca : theano ojbect
+    pca : theano object
         The pca that contains the top 150 eigenvectors extracted using approximated Singular Value Decomposition of the data
 
     """
     X = face_profile_data
     y = face_profile_name_index
 
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42)
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=0.25, random_state=42)
 
     # Compute a PCA (eigenfaces) on the face dataset (treated as unlabeled
     # dataset): unsupervised feature extraction / dimensionality reduction
-    n_components = 150 # maximum number of components to keep
+    n_components = 150  # maximum number of components to keep
 
-    print("\nExtracting the top %d eigenfaces from %d faces" % (n_components, X_train.shape[0]))
+    print("\nExtracting the top %d eigenfaces from %d faces" %
+          (n_components, X_train.shape[0]))
 
     pca = RandomizedPCA(n_components=n_components, whiten=True).fit(X_train)
-    eigenfaces = pca.components_.reshape((n_components, face_dim[0], face_dim[1]))
+    eigenfaces = pca.components_.reshape((n_components, face_dim[0],
+                                          face_dim[1]))
 
-    # This portion of the code is used if the data is scarce, it uses the number 
+    # This portion of the code is used if the data is scarce, it uses the number
     # of imputs as the number of features
     # pca = RandomizedPCA(n_components=None, whiten=True).fit(X_train)
     # eigenfaces = pca.components_.reshape((pca.components_.shape[0], face_dim[0], face_dim[1]))
 
     print("\nProjecting the input data on the eigenfaces orthonormal basis")
     X_train_pca = pca.transform(X_train)
-    X_test_pca = pca.transform(X_test) 
+    X_test_pca = pca.transform(X_test)
 
     # Train a SVM classification model
 
     print("\nFitting the classifier to the training set")
-    param_grid = {'C': [1e3, 5e3, 1e4, 5e4, 1e5],
-                  'gamma': [0.0001, 0.0005, 0.001, 0.005, 0.01, 0.1], }
-    # clf = GridSearchCV(SVC(kernel='rbf', class_weight='balanced'), param_grid)
+    PARAM_GRID = {
+        'C': [1e3, 5e3, 1e4, 5e4, 1e5],
+        'gamma': [0.0001, 0.0005, 0.001, 0.005, 0.01, 0.1],
+    }
+    # clf = GridSearchCV(SVC(kernel='rbf', class_weight='balanced'), PARAM_GRID)
     # Train_pca Test Error Rate:  0.0670016750419
     # Train_pca Test Recognition Rate:  0.932998324958
-
-
 
     # clf = SVC(kernel='linear', C=1)
     # 2452  samples from  38  people are loaded
@@ -101,19 +98,25 @@ def test_SVM(face_profile_data, face_profile_name_index, face_dim, face_profile_
     # clf = SVC(kernel='sigmoid')
     # Train_pca Test Error Rate:  0.985318107667
     # Train_pca Test Recognition Rate:  0.0146818923328
-    
 
     # clf = SVC(kernel='rbf').fit(X_train, y_train)
     # Train_pca Test Error Rate:  0.0619765494137
     # Train_pca Test Recognition Rate:  0.938023450586
 
-
-
-    # Best Estimator found using Radial Basis Function Kernal:
-    clf = SVC(C=1000.0, cache_size=200, class_weight='balanced', coef0=0.0,
-  decision_function_shape=None, degree=3, gamma=0.0001, kernel='rbf',
-  max_iter=-1, probability=False, random_state=None, shrinking=True,
-  tol=0.001, verbose=False)
+    # Best Estimator found using Radial Basis Function Kernel:
+    clf = GridSearchCV(
+        SVC(cache_size=200,
+            class_weight='balanced',
+            coef0=0.0,
+            decision_function_shape=None,
+            degree=3,
+            kernel='rbf',
+            max_iter=-1,
+            probability=False,
+            random_state=None,
+            shrinking=True,
+            tol=0.001,
+            verbose=False), PARAM_GRID)
     # Train_pca with Alex Test Error Rate:  0.088424437299
     # Train_pca with Alex Test Recognition Rate:  0.911575562701
 
@@ -126,13 +129,14 @@ def test_SVM(face_profile_data, face_profile_name_index, face_dim, face_profile_
     print("\nPredicting people's names on the test set")
     t0 = time()
     y_pred = clf.predict(X_test_pca)
-    print("\nPrediction took %0.8f second per sample on average" % ((time() - t0)/y_pred.shape[0]*1.0))
+    print("\nPrediction took %0.8f second per sample on average" %
+          ((time() - t0) / y_pred.shape[0] * 1.0))
 
     # print "predicated names: ", y_pred
     # print "actual names: ", y_test
     error_rate = errorRate(y_pred, y_test)
-    print ("\nTest Error Rate: %0.4f %%" % (error_rate * 100))
-    print ("Test Recognition Rate: %0.4f %%" % ((1.0 - error_rate) * 100))
+    print("\nTest Error Rate: %0.4f %%" % (error_rate * 100))
+    print("Test Recognition Rate: %0.4f %%" % ((1.0 - error_rate) * 100))
 
     ###############################################################################
     # Testing
@@ -153,7 +157,6 @@ def test_SVM(face_profile_data, face_profile_name_index, face_dim, face_profile_
     # plt.imshow(X_test_pic1_for_display)
     # plt.show()
 
-
     ###############################################################################
     # Qualitative evaluation of the predictions using matplotlib
     # import matplotlib.pyplot as plt
@@ -168,7 +171,6 @@ def test_SVM(face_profile_data, face_profile_name_index, face_dim, face_profile_
     #         plt.title(titles[i], size=12)
     #         plt.xticks(())
     #         plt.yticks(())
-
 
     # # plot the result of the prediction on a portion of the test set
 
@@ -189,13 +191,15 @@ def test_SVM(face_profile_data, face_profile_name_index, face_dim, face_profile_
 
     # plt.show()
 
-
     return clf, pca
 
 
 def build_SVC(face_profile_data, face_profile_name_index, face_dim):
     """
-    Build the SVM classification modle using the face_profile_data matrix (numOfFace X numOfPixel) and face_profile_name_index array, face_dim is a tuple of the dimension of each image(h,w) Returns the SVM classification modle
+    Build the SVM classification modle using the face_profile_data matrix (numOfFace X numOfPixel)
+    and face_profile_name_index array, face_dim is a tuple of the dimension of each image(h,w)
+    Returns the SVM classification modle
+
     Parameters
     ----------
     face_profile_data : ndarray (number_of_images_in_face_profiles, width * height of the image)
@@ -220,38 +224,52 @@ def build_SVC(face_profile_data, face_profile_name_index, face_dim):
     X = face_profile_data
     y = face_profile_name_index
 
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42)
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=0.25, random_state=42)
 
     # Compute a PCA (eigenfaces) on the face dataset (treated as unlabeled
     # dataset): unsupervised feature extraction / dimensionality reduction
-    n_components = 150 # maximum number of components to keep
+    n_components = 150  # maximum number of components to keep
 
-    print("\nExtracting the top %d eigenfaces from %d faces" % (n_components, X_train.shape[0]))
+    print("\nExtracting the top %d eigenfaces from %d faces" %
+          (n_components, X_train.shape[0]))
 
     pca = RandomizedPCA(n_components=n_components, whiten=True).fit(X_train)
-    eigenfaces = pca.components_.reshape((n_components, face_dim[0], face_dim[1]))
+    eigenfaces = pca.components_.reshape((n_components, face_dim[0],
+                                          face_dim[1]))
 
-    # This portion of the code is used if the data is scarce, it uses the number 
+    # This portion of the code is used if the data is scarce, it uses the number
     # of imputs as the number of features
     # pca = RandomizedPCA(n_components=None, whiten=True).fit(X_train)
     # eigenfaces = pca.components_.reshape((pca.components_.shape[0], face_dim[0], face_dim[1]))
 
     print("\nProjecting the input data on the eigenfaces orthonormal basis")
     X_train_pca = pca.transform(X_train)
-    X_test_pca = pca.transform(X_test) 
+    X_test_pca = pca.transform(X_test)
 
     # Train a SVM classification model
 
     print("\nFitting the classifier to the training set")
-    param_grid = {'C': [1e3, 5e3, 1e4, 5e4, 1e5],
-                  'gamma': [0.0001, 0.0005, 0.001, 0.005, 0.01, 0.1], }
-    # clf = GridSearchCV(SVC(kernel='rbf', class_weight='balanced'), param_grid)
+    PARAM_GRID = {
+        'C': [1e3, 5e3, 1e4, 5e4, 1e5],
+        'gamma': [0.0001, 0.0005, 0.001, 0.005, 0.01, 0.1],
+    }
+    # clf = GridSearchCV(SVC(kernel='rbf', class_weight='balanced'), PARAM_GRID)
 
     # Best Estimator found using Radial Basis Function Kernal:
-    clf = SVC(C=1000.0, cache_size=200, class_weight='balanced', coef0=0.0,
-  decision_function_shape=None, degree=3, gamma=0.0001, kernel='rbf',
-  max_iter=-1, probability=False, random_state=None, shrinking=True,
-  tol=0.001, verbose=False)
+    clf = GridSearchCV(
+        SVC(cache_size=200,
+            class_weight='balanced',
+            coef0=0.0,
+            decision_function_shape=None,
+            degree=3,
+            kernel='rbf',
+            max_iter=-1,
+            probability=False,
+            random_state=None,
+            shrinking=True,
+            tol=0.001,
+            verbose=False), PARAM_GRID)
     # Train_pca with Alex Test Error Rate:  0.088424437299
     # Train_pca with Alex Test Recognition Rate:  0.911575562701
 
@@ -264,13 +282,14 @@ def build_SVC(face_profile_data, face_profile_name_index, face_dim):
     print("\nPredicting people's names on the test set")
     t0 = time()
     y_pred = clf.predict(X_test_pca)
-    print("\nPrediction took %s per sample on average" % ((time() - t0)/y_pred.shape[0]*1.0))
+    print("\nPrediction took %s per sample on average" %
+          ((time() - t0) / y_pred.shape[0] * 1.0))
 
     # print "predicated names: ", y_pred
     # print "actual names: ", y_test
     error_rate = errorRate(y_pred, y_test)
-    print ("\nTest Error Rate: %0.4f %%" % (error_rate * 100))
-    print ("Test Recognition Rate: %0.4f %%" % ((1.0 - error_rate) * 100))
+    print("\nTest Error Rate: %0.4f %%" % (error_rate * 100))
+    print("Test Recognition Rate: %0.4f %%" % ((1.0 - error_rate) * 100))
 
     return clf, pca
 
@@ -282,7 +301,7 @@ def predict(clf, pca, img, face_profile_names):
     Parameters
     ----------
     clf: theano object
-        The trained svm classifier 
+        The trained svm classifier
 
     pca: theano object
         The pca that contains the top eigenvectors extracted using approximated Singular Value Decomposition of the data
@@ -300,11 +319,12 @@ def predict(clf, pca, img, face_profile_names):
     """
 
     img = img.ravel()
-    # Apply dimentionality reduction on img, img is projected on the first principal components previous extracted from the Yale Extended dataset B.
-    principle_components = pca.transform(img)
+    # Apply dimensionality reduction on img, img is projected on the first principal components previous extracted from the Yale Extended dataset B.
+    principle_components = pca.transform(np.array(img).reshape(1, -1))
     pred = clf.predict(principle_components)
-    name = face_profile_names[pred]
+    name = face_profile_names[np.int(pred)]
     return name
+
 
 def errorRate(pred, actual):
     """
@@ -321,11 +341,10 @@ def errorRate(pred, actual):
     Returns
     -------
     error_rate: float
-        The calcualted error rate
+        The calculated error rate
 
     """
-    if pred.shape != actual.shape: return None
-    error_rate = np.count_nonzero(pred - actual)/float(pred.shape[0])
+    if pred.shape != actual.shape:
+        return None
+    error_rate = np.count_nonzero(pred - actual) / float(pred.shape[0])
     return error_rate
-
-
