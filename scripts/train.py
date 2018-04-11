@@ -26,6 +26,7 @@ Usage during run time:
     All images are saved under ../face_profiles/face_profile_name
 
     press 'q' or 'ESC' to quit the application
+
 """
 
 import os

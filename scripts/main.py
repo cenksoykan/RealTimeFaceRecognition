@@ -22,6 +22,7 @@ To Run:
 
 Usage:
     press 'q' or 'ESC' to quit the application
+
 """
 
 from os import path
