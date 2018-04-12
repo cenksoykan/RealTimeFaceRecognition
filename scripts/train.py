@@ -36,15 +36,21 @@ from scipy import ndimage
 import cv2
 import utils as ut
 
-FACE_DIM = (200, 200)
+FACE_DIM = (50, 50)
+DISPLAY_FACE_DIM = (200, 200)
 SKIP_FRAME = 2  # the fixed skip frame
 FRAME_SKIP_RATE = 0  # skip SKIP_FRAME frames every other frame
 SCALE_FACTOR = 2  # used to resize the captured frame for face detection for faster processing speed
-CASCADELOCATION = os.path.normpath(
-    os.path.realpath(cv2.__file__) +
-    "/../data/haarcascade_frontalface_default.xml")
-FACE_CASCADE = cv2.CascadeClassifier(CASCADELOCATION)
-SIDEFACE_CASCADE = cv2.CascadeClassifier(CASCADELOCATION)
+FRONTALFACE = os.path.join(
+    os.path.dirname(cv2.__file__), "data",
+    "haarcascade_frontalface_default.xml")
+PROFILEFACE = os.path.join(
+    os.path.dirname(cv2.__file__), "data", "haarcascade_profileface.xml")
+FACE_CASCADE = cv2.CascadeClassifier(FRONTALFACE)
+SIDEFACE_CASCADE = cv2.CascadeClassifier(PROFILEFACE)
+
+#  For saving face data to directory
+PROFILE_FOLDER_PATH = None
 
 # dictionary mapping used to keep track of head rotation maps
 ROTATION_MAPS = {
@@ -63,10 +69,17 @@ def get_rotation_map(rotation):
     return ROTATION_MAPS.get("middle", None)
 
 
+if len(sys.argv) == 1:
+    ut.save_data()
+    exit()
+elif len(sys.argv) > 2:
+    print("\nError: More Than One Saving Directory Specified\n")
+    exit()
+else:
+    PROFILE_FOLDER_PATH = ut.create_profile_in_database(sys.argv[1])
+
 CURRENT_ROTATION_MAP = get_rotation_map(0)
-
 WEBCAM = cv2.VideoCapture(0)
-
 RET, FRAME = WEBCAM.read()  # get first frame
 FRAME_SCALE = (int(FRAME.shape[1] / SCALE_FACTOR),
                int(FRAME.shape[0] / SCALE_FACTOR))  # (y, x)
@@ -75,18 +88,6 @@ CROPPED_FACE = []
 NUM_OF_FACE_TO_COLLECT = 150
 NUM_OF_FACE_SAVED = 0
 UNSAVED = True
-
-#  For saving face data to directory
-PROFILE_FOLDER_PATH = None
-
-if len(sys.argv) == 1:
-    print("\nError: No Saving Directory Specified\n")
-    exit()
-elif len(sys.argv) > 2:
-    print("\nError: More Than One Saving Directory Specified\n")
-    exit()
-else:
-    PROFILE_FOLDER_PATH = ut.create_profile_in_database(sys.argv[1])
 
 for picture in os.listdir(PROFILE_FOLDER_PATH):
     file_path = os.path.join(PROFILE_FOLDER_PATH, picture)
@@ -105,46 +106,44 @@ while RET:
     RESIZED_FRAME = cv2.flip(RESIZED_FRAME, 1)
 
     PROCESSED_FRAME = RESIZED_FRAME
+
     # Skip a frame if the no face was found last frame
     if FRAME_SKIP_RATE == 0:
         FACEFOUND = False
         for r in CURRENT_ROTATION_MAP:
-
             ROTATED_FRAME = ndimage.rotate(RESIZED_FRAME, r)
-
-            gray = cv2.cvtColor(ROTATED_FRAME, cv2.COLOR_BGR2GRAY)
+            GRAY_FRAME = cv2.cvtColor(ROTATED_FRAME, cv2.COLOR_BGR2GRAY)
 
             # return tuple is empty, ndarray if detected face
             faces = FACE_CASCADE.detectMultiScale(
-                gray,
+                GRAY_FRAME,
                 scaleFactor=1.3,
                 minNeighbors=5,
                 minSize=(30, 30),
                 flags=cv2.CASCADE_SCALE_IMAGE)
 
             # If frontal face detector failed, use profileface detector
-            faces = faces if len(faces) else SIDEFACE_CASCADE.detectMultiScale(
-                gray,
-                scaleFactor=1.3,
-                minNeighbors=5,
-                minSize=(30, 30),
-                flags=cv2.CASCADE_SCALE_IMAGE)
-
-            # for f in faces:
-            #     x, y, w, h = [ v*SCALE_FACTOR for v in f ]
-            #     cv2.rectangle(frame, (x,y), (x+w,y+h), (0,255,0))
-            #     cv2.putText(frame, "Training", (x,y), cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0,255,0))
+            if not len(faces):
+                SIDEFACE_CASCADE.detectMultiScale(
+                    GRAY_FRAME,
+                    scaleFactor=1.3,
+                    minNeighbors=5,
+                    minSize=(30, 30),
+                    flags=cv2.CASCADE_SCALE_IMAGE)
 
             if len(faces):
                 for f in faces:
                     x, y, w, h = [
                         v for v in f
                     ]  # scale the bounding box back to original frame size
-                    CROPPED_FACE = ROTATED_FRAME[
-                        y:y + h, x:x + w]  # img[y: y + h, x: x + w]
+                    CROPPED_FACE = GRAY_FRAME[y:y + h, x:
+                                              x + w]  # img[y: y + h, x: x + w]
                     CROPPED_FACE = cv2.resize(
-                        CROPPED_FACE, FACE_DIM, interpolation=cv2.INTER_AREA)
+                        CROPPED_FACE,
+                        DISPLAY_FACE_DIM,
+                        interpolation=cv2.INTER_AREA)
                     CROPPED_FACE = cv2.flip(CROPPED_FACE, 1)
+
                     cv2.rectangle(ROTATED_FRAME, (x, y), (x + w, y + h),
                                   (0, 255, 0))
                     cv2.putText(ROTATED_FRAME, "Training Face", (x, y),
@@ -162,35 +161,30 @@ while RET:
 
         if FACEFOUND:
             FRAME_SKIP_RATE = 0
-            # print "Face Found"
         else:
             FRAME_SKIP_RATE = SKIP_FRAME
-            # print "Face Not Found"
-
     else:
         FRAME_SKIP_RATE -= 1
-        # print "Face Not Found"
 
     cv2.putText(PROCESSED_FRAME, "Press ESC or 'q' to quit.", (5, 15),
                 cv2.FONT_HERSHEY_SIMPLEX, 0.4, (255, 255, 255))
 
-    cv2.imshow("Real Time Facial Recognition", PROCESSED_FRAME)
+    cv2.imshow("Face Recognition", PROCESSED_FRAME)
 
     if len(CROPPED_FACE):
-        cv2.imshow("Cropped Face",
-                   cv2.cvtColor(CROPPED_FACE, cv2.COLOR_BGR2GRAY))
-        if NUM_OF_FACE_SAVED < NUM_OF_FACE_TO_COLLECT:
-            if UNSAVED and KEY in [ord('P'), ord('p')]:
+        if UNSAVED and NUM_OF_FACE_SAVED < NUM_OF_FACE_TO_COLLECT:
+            cv2.imshow("Recognized Face", CROPPED_FACE)
+            if KEY in [ord('P'), ord('p')]:
                 FACE_TO_SAVE = cv2.resize(
-                    CROPPED_FACE, (50, 50), interpolation=cv2.INTER_AREA)
-                FACE_NAME = PROFILE_FOLDER_PATH + sys.argv[1] + "-" + str(
-                    NUM_OF_FACE_SAVED) + ".png"
-                cv2.imwrite(FACE_NAME, FACE_TO_SAVE)
+                    CROPPED_FACE, FACE_DIM, interpolation=cv2.INTER_AREA)
+                FACE_NAME = sys.argv[1] + "-" + str(NUM_OF_FACE_SAVED) + ".pgm"
+                IMG_PATH = os.path.join(PROFILE_FOLDER_PATH, FACE_NAME)
+                cv2.imwrite(IMG_PATH, FACE_TO_SAVE)
                 NUM_OF_FACE_SAVED += 1
                 UNSAVED = False
-                print("Pic Saved:", FACE_NAME)
+                print("Picture Saved:", FACE_NAME)
         else:
-            break
+            exit()
 
     # get next frame
     RET, FRAME = WEBCAM.read()
