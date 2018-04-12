@@ -73,7 +73,7 @@ def errorRate(pred, actual):
     return error_rate
 
 
-def build_SVC(face_profile_data, face_profile_name_index, face_dim):
+def build_SVC(face_profile_data, face_profile_name_index, face_profile_names):
     """
     Build the SVM classification modle using the face_profile_data matrix (numOfFace X numOfPixel)
     and face_profile_name_index array, face_dim is a tuple of the dimension of each image(h,w)
@@ -114,6 +114,7 @@ def build_SVC(face_profile_data, face_profile_name_index, face_dim):
     # Compute a PCA (eigenfaces) on the face dataset (treated as unlabeled
     # dataset): unsupervised feature extraction / dimensionality reduction
     n_components = 150  # maximum number of components to keep
+    face_dim = (50, 50)
 
     print("\nExtracting the top %d eigenfaces from %d faces" %
           (n_components, x_train.shape[0]))
@@ -182,4 +183,4 @@ def build_SVC(face_profile_data, face_profile_name_index, face_dim):
     print("\nTest Error Rate: %0.4f %%" % (error_rate * 100))
     print("Test Recognition Rate: %0.4f %%" % ((1.0 - error_rate) * 100))
 
-    return clf, pca
+    return clf, pca, face_profile_names
