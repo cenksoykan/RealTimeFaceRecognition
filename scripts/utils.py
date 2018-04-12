@@ -6,11 +6,13 @@ Summary: Utilties used for facial tracking in OpenCV
 """
 
 import os
+import pickle
 import errno
 import logging
 import shutil
 import numpy as np
 import cv2
+from svm import build_SVC
 
 ###############################################################################
 # Used For Facial Tracking and Traning in OpenCV
@@ -35,14 +37,16 @@ def read_images_from_single_face_profile(face_profile,
 
     Returns
     -------
-    X_data : numpy array, shape = (number_of_faces_in_one_face_profile, face_pixel_width * face_pixel_height)
-        A face data array contains the face image pixel rgb values of all the images in the specified face profile
+    x_data : numpy array, shape = (number_of_faces_in_one_face_profile, face_pixel_width * face_pixel_height)
+        A face data array contains the face image pixel rgb values of all the images
+        in the specified face profile
 
-    Y_data : numpy array, shape = (number_of_images_in_face_profiles, 1)
-        A face_profile_index data array contains the index of the face profile name of the specified face profile directory
+    y_data : numpy array, shape = (number_of_images_in_face_profiles, 1)
+        A face_profile_index data array contains the index of the face profile name
+        in the specified face profile directory
 
     """
-    X_data = np.array([])
+    x_data = np.array([])
     index = 0
     for the_file in os.listdir(face_profile):
         file_path = os.path.join(face_profile, the_file)
@@ -52,13 +56,13 @@ def read_images_from_single_face_profile(face_profile,
             img = cv2.imread(file_path, 0)
             img = cv2.resize(img, dim, interpolation=cv2.INTER_AREA)
             img_data = img.ravel()
-            X_data = img_data if not X_data.shape[0] else np.vstack((X_data,
+            x_data = img_data if not x_data.shape[0] else np.vstack((x_data,
                                                                      img_data))
             index += 1
 
-    Y_data = np.empty(index, dtype=int)
-    Y_data.fill(face_profile_name_index)
-    return X_data, Y_data
+    y_data = np.empty(index, dtype=int)
+    y_data.fill(face_profile_name_index)
+    return x_data, y_data
 
 
 def clean_profile(face_profile_directory):
@@ -99,27 +103,22 @@ def clean_profile(face_profile_directory):
     return profile_directory_list
 
 
-def load_training_data(face_profile_directory):
+def load_training_data():
     """
     Loads all the images from the face profile directory into ndarrays
 
-    Parameters
-    ----------
-    face_profile_directory: string
-        The directory path of the specified face profile directory
-
-    face_profile_names: list
-        The index corresponding to the names corresponding to the face profile directory
-
     Returns
     -------
-    X_data : numpy array, shape = (number_of_faces_in_face_profiles, face_pixel_width * face_pixel_height)
+    x_data : numpy array, shape = (number_of_faces_in_face_profiles, face_pixel_width * face_pixel_height)
         A face data array contains the face image pixel rgb values of all face_profiles
 
-    Y_data : numpy array, shape = (number_of_face_profiles, 1)
+    y_data : numpy array, shape = (number_of_face_profiles, 1)
         A face_profile_index data array contains the indexes of all the face profile names
 
     """
+    face_profile_directory = os.path.join(
+        os.path.dirname(__file__), "../face_profiles/")
+
     # delete profile directory without images
     profile_directory_list = clean_profile(face_profile_directory)
 
@@ -134,21 +133,24 @@ def load_training_data(face_profile_directory):
         )
         exit()
 
-    first_data = str(face_profile_names[0])
-    first_data_path = os.path.join(face_profile_directory, first_data)
-    X_data, Y_data = read_images_from_single_face_profile(first_data_path, 0)
+    first_data_name = str(face_profile_names[0])
+    first_data_path = os.path.join(face_profile_directory, first_data_name)
+    x_data, y_data = read_images_from_single_face_profile(first_data_path, 0)
     print("Loading Database:")
-    print(1, "\t->", X_data.shape[0], "images are loaded from:",
-          "\"" + first_data_path + "\"")
+    print(1, "\t->", x_data.shape[0], "images are loaded from",
+          "\"" + first_data_name + "\"")
     for i in range(1, len(face_profile_names)):
         directory_name = str(face_profile_names[i])
         directory_path = os.path.join(face_profile_directory, directory_name)
-        tempX, tempY = read_images_from_single_face_profile(directory_path, i)
-        X_data = np.concatenate((X_data, tempX), axis=0)
-        Y_data = np.append(Y_data, tempY)
-        print(i + 1, "\t->", tempX.shape[0], "images are loaded from:",
-              "\"" + directory_path + "\"")
-    return X_data, Y_data, face_profile_names
+        temp_x, temp_y = read_images_from_single_face_profile(
+            directory_path, i)
+        x_data = np.concatenate((x_data, temp_x), axis=0)
+        y_data = np.append(y_data, temp_y)
+        print(i + 1, "\t->", temp_x.shape[0], "images are loaded from",
+              "\"" + directory_name + "\"")
+    print("\n" + str(y_data.shape[0]), "samples from", len(face_profile_names),
+          "people are loaded")
+    return x_data, y_data, face_profile_names
 
 
 def rotate_image(img, rotation, scale=1.0):
@@ -182,7 +184,8 @@ def rotate_image(img, rotation, scale=1.0):
 
 def trim(img, dim):
     """
-    Trim the four sides(black paddings) of the image matrix and crop out the middle with a new dimension
+    Trim the four sides(black paddings) of the image matrix
+    and crop out the middle with a new dimension
 
     Parameters
     ----------
@@ -273,9 +276,33 @@ def create_profile_in_database(face_profile_name,
         The path of the face profile created
 
     """
-    face_profile_path = database_path + face_profile_name + "/"
+    face_profile_path = os.path.join(
+        os.path.dirname(__file__), database_path, face_profile_name)
     create_directory(face_profile_path)
     # Delete all the pictures before recording new
     if clean_directory:
         clean_directory(face_profile_path)
     return face_profile_path
+
+
+def save_data():
+    # Load training data from face_profiles/
+    face_profile_data, face_profile_name_index, face_profile_names = load_training_data(
+    )
+
+    # Build the classifier
+    face_profile = build_SVC(face_profile_data, face_profile_name_index,
+                             face_profile_names)
+
+    data_dir = os.path.join(os.path.dirname(__file__), "../temp")
+    data_path = os.path.join(data_dir, "SVM.pkl")
+
+    if not os.path.exists(data_dir):
+        os.mkdir(data_dir)
+
+    # Save the classifier
+    with open(data_path, 'wb') as f:
+        pickle.dump(face_profile, f)
+
+    print("Training data saved")
+    return face_profile
