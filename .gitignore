@@ -1,5 +1,6 @@
-face_profiles
-!face_profiles/yaleB*
+/face_profiles
+!/face_profiles/yaleB*
+/temp
 
 # Created by https://www.gitignore.io/api/git,vim,macos,linux,emacs,python,windows,sublimetext,visualstudiocode
 
