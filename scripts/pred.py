@@ -16,6 +16,7 @@ from os import path
 import sys
 import cv2
 from svm import predict
+from utils import check_image_format
 
 print(__doc__)
 
@@ -41,8 +42,7 @@ if not path.exists(DATA_PATH):
     print("\nError: There is no picture in this direction\n")
     exit()
 
-if DATA_PATH.endswith(".png") or DATA_PATH.endswith(
-        ".jpg") or DATA_PATH.endswith(".jpeg") or DATA_PATH.endswith(".pgm"):
+if check_image_format(DATA_PATH):
     FACE = cv2.imread(DATA_PATH, 0)
 else:
     print(

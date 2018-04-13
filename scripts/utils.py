@@ -13,8 +13,13 @@ import shutil
 import numpy as np
 import cv2
 
-###############################################################################
-# Used For Facial Tracking and Traning in OpenCV
+
+def check_image_format(img):
+    if img.endswith(".png") or img.endswith(".jpg") or img.endswith(
+            ".jpeg") or img.endswith(".pgm"):
+        return True
+    else:
+        return False
 
 
 def read_images_from_single_face_profile(face_profile,
@@ -49,9 +54,7 @@ def read_images_from_single_face_profile(face_profile,
     index = 0
     for the_file in os.listdir(face_profile):
         file_path = os.path.join(face_profile, the_file)
-        if file_path.endswith(".png") or file_path.endswith(
-                ".jpg") or file_path.endswith(".jpeg") or file_path.endswith(
-                    ".pgm"):
+        if check_image_format(file_path):
             img = cv2.imread(file_path, 0)
             img = cv2.resize(img, dim, interpolation=cv2.INTER_AREA)
             img = cv2.convertScaleAbs(img)
@@ -83,9 +86,7 @@ def clean_profile(face_profile_directory):
             index = 0
             for the_file in os.listdir(profile_path):
                 file_path = os.path.join(profile_path, the_file)
-                if file_path.endswith(".png") or file_path.endswith(
-                        ".jpg") or file_path.endswith(
-                            ".jpeg") or file_path.endswith(".pgm"):
+                if check_image_format(file_path):
                     index += 1
             if index == 0:
                 shutil.rmtree(profile_path)
