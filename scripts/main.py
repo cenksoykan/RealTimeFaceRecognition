@@ -27,26 +27,14 @@ Usage:
 
 from os import path
 import sys
-import pickle
 import logging
 from scipy import ndimage
 import numpy as np
 import cv2
-import utils as ut
+import utils
 from svm import predict
 
 print(__doc__)
-
-###############################################################################
-# Building SVC from database
-
-DATA_PATH = path.join(path.dirname(__file__), "../temp", "SVM.pkl")
-
-if path.exists(DATA_PATH):
-    with open(DATA_PATH, 'rb') as f:
-        CLF, PCA, FACE_PROFILE_NAMES = pickle.load(f)
-else:
-    CLF, PCA, FACE_PROFILE_NAMES = ut.save_data()
 
 ###############################################################################
 # Facial Recognition In Live Tracking
@@ -70,14 +58,17 @@ elif len(sys.argv) > 2:
 
 # dictionary mapping used to keep track of head rotation maps
 ROTATION_MAPS = {
+    "middle": np.array([0, -30, 30]),
     "left": np.array([-30, 0, 30]),
     "right": np.array([30, 0, -30]),
-    "middle": np.array([0, -30, 30]),
 }
 
 
 def get_rotation_map(rotation):
-    """Takes in an angle rotation, and returns an optimized rotation map"""
+    """
+    Takes in an angle rotation, and returns an optimized rotation map
+
+    """
     if rotation > 0:
         return ROTATION_MAPS.get("right", None)
     elif rotation < 0:
@@ -97,14 +88,14 @@ while RET:
     KEY = cv2.waitKey(1)
     # exit on 'q' 'esc' 'Q'
     if KEY in [27, ord('Q'), ord('q')]:
-        break
+        exit()
+
     # resize the captured frame for face detection to increase processing speed
     RESIZED_FRAME = cv2.resize(FRAME, FRAME_SCALE)
     RESIZED_FRAME = cv2.flip(RESIZED_FRAME, 1)
 
     PROCESSED_FRAME = RESIZED_FRAME
     # Skip a frame if the no face was found last frame
-
     if FRAME_SKIP_RATE == 0:
         FACEFOUND = False
         for r in CURRENT_ROTATION_MAP:
@@ -131,27 +122,22 @@ while RET:
             if len(faces):
                 for f in faces:
                     # Crop out the face
-                    x, y, w, h = [
-                        v for v in f
-                    ]  # scale the bounding box back to original frame size
-                    CROPPED_FACE = GRAY_FRAME[y:y + h, x:
-                                              x + w]  # img[y: y + h, x: x + w]
+                    x, y, w, h = [v for v in f]
+                    CROPPED_FACE = GRAY_FRAME[y:y + h, x:x + w]
                     CROPPED_FACE = cv2.resize(
                         CROPPED_FACE, FACE_DIM, interpolation=cv2.INTER_AREA)
                     CROPPED_FACE = cv2.flip(CROPPED_FACE, 1)
 
-                    name_to_display = predict(CLF, PCA, CROPPED_FACE,
-                                              FACE_PROFILE_NAMES)
+                    name_to_display = predict(CROPPED_FACE)
 
-                    # Display frame
                     cv2.rectangle(ROTATED_FRAME, (x, y), (x + w, y + h),
                                   (0, 255, 0))
                     cv2.putText(ROTATED_FRAME, name_to_display, (x, y),
                                 cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0))
 
                 # rotate the frame back and trim the black paddings
-                PROCESSED_FRAME = ut.trim(
-                    ut.rotate_image(ROTATED_FRAME, r * (-1)), FRAME_SCALE)
+                PROCESSED_FRAME = utils.rotate_image(ROTATED_FRAME, r * (-1))
+                PROCESSED_FRAME = utils.trim(PROCESSED_FRAME, FRAME_SCALE)
 
                 # reset the optimized rotation map
                 CURRENT_ROTATION_MAP = get_rotation_map(r)
@@ -167,7 +153,7 @@ while RET:
     # print("Frame dimension: ", PROCESSED_FRAME.shape)
 
     cv2.putText(PROCESSED_FRAME, "Press ESC or 'q' to quit.", (5, 15),
-                cv2.FONT_HERSHEY_SIMPLEX, 0.4, (255, 255, 255))
+                cv2.FONT_HERSHEY_SIMPLEX, 0.4, (0, 255, 0))
 
     cv2.imshow("Face Recognition", PROCESSED_FRAME)
 

@@ -34,7 +34,7 @@ import sys
 import numpy as np
 from scipy import ndimage
 import cv2
-import utils as ut
+import utils
 
 FACE_DIM = (50, 50)
 DISPLAY_FACE_DIM = (200, 200)
@@ -61,7 +61,10 @@ ROTATION_MAPS = {
 
 
 def get_rotation_map(rotation):
-    """ Takes in an angle rotation, and returns an optimized rotation map """
+    """
+    Takes in an angle rotation, and returns an optimized rotation map
+
+    """
     if rotation > 0:
         return ROTATION_MAPS.get("right", None)
     elif rotation < 0:
@@ -70,13 +73,13 @@ def get_rotation_map(rotation):
 
 
 if len(sys.argv) == 1:
-    ut.save_data()
+    utils.save_data()
     exit()
 elif len(sys.argv) > 2:
     print("\nError: More Than One Saving Directory Specified\n")
     exit()
 else:
-    PROFILE_FOLDER_PATH = ut.create_profile_in_database(sys.argv[1])
+    PROFILE_FOLDER_PATH = utils.create_profile_in_database(sys.argv[1])
 
 CURRENT_ROTATION_MAP = get_rotation_map(0)
 WEBCAM = cv2.VideoCapture(0)
@@ -100,13 +103,13 @@ while RET:
     KEY = cv2.waitKey(1)
     # exit on 'q' 'esc' 'Q'
     if KEY in [27, ord('Q'), ord('q')]:
-        break
+        exit()
+
     # resize the captured frame for face detection to increase processing speed
     RESIZED_FRAME = cv2.resize(FRAME, FRAME_SCALE)
     RESIZED_FRAME = cv2.flip(RESIZED_FRAME, 1)
 
     PROCESSED_FRAME = RESIZED_FRAME
-
     # Skip a frame if the no face was found last frame
     if FRAME_SKIP_RATE == 0:
         FACEFOUND = False
@@ -133,11 +136,8 @@ while RET:
 
             if len(faces):
                 for f in faces:
-                    x, y, w, h = [
-                        v for v in f
-                    ]  # scale the bounding box back to original frame size
-                    CROPPED_FACE = GRAY_FRAME[y:y + h, x:
-                                              x + w]  # img[y: y + h, x: x + w]
+                    x, y, w, h = [v for v in f]
+                    CROPPED_FACE = GRAY_FRAME[y:y + h, x:x + w]
                     CROPPED_FACE = cv2.resize(
                         CROPPED_FACE,
                         DISPLAY_FACE_DIM,
@@ -150,8 +150,8 @@ while RET:
                                 cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0))
 
                 # rotate the frame back and trim the black paddings
-                PROCESSED_FRAME = ut.trim(
-                    ut.rotate_image(ROTATED_FRAME, r * (-1)), FRAME_SCALE)
+                PROCESSED_FRAME = utils.rotate_image(ROTATED_FRAME, r * (-1))
+                PROCESSED_FRAME = utils.trim(PROCESSED_FRAME, FRAME_SCALE)
 
                 # reset the optimized rotation map
                 CURRENT_ROTATION_MAP = get_rotation_map(r)
@@ -167,7 +167,7 @@ while RET:
         FRAME_SKIP_RATE -= 1
 
     cv2.putText(PROCESSED_FRAME, "Press ESC or 'q' to quit.", (5, 15),
-                cv2.FONT_HERSHEY_SIMPLEX, 0.4, (255, 255, 255))
+                cv2.FONT_HERSHEY_SIMPLEX, 0.4, (0, 255, 0))
 
     cv2.imshow("Face Recognition", PROCESSED_FRAME)
 
@@ -182,7 +182,7 @@ while RET:
                 cv2.imwrite(IMG_PATH, FACE_TO_SAVE)
                 NUM_OF_FACE_SAVED += 1
                 UNSAVED = False
-                print("Picture Saved:", FACE_NAME)
+                print("Picture is saved:", FACE_NAME)
         else:
             exit()
 

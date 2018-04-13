@@ -3,42 +3,44 @@ Summary: SVM methods using Scikit
 
 """
 
+from os import path
 from time import time
-import warnings
+from pickle import load
 import numpy as np
 
 from sklearn.svm import SVC
 from sklearn.decomposition import PCA
 from sklearn.model_selection import GridSearchCV
-with warnings.catch_warnings():
-    warnings.simplefilter("ignore")
-    from sklearn.model_selection import train_test_split
+from sklearn.model_selection import train_test_split
+
+import utils
 
 
-def predict(clf, pca, img, face_profile_names):
+def predict(img):
     """
     Predict the name of the supplied image from the list of face profile names
 
     Parameters
     ----------
-    clf: theano object
-        The trained svm classifier
-
-    pca: theano object
-        The pca that contains the top eigenvectors extracted
-        using approximated Singular Value Decomposition of the data
 
     img: ndarray
         The input image for prediction
 
-    face_profile_names: list
-       The names corresponding to the face profiles
     Returns
     -------
     name : string
         The predicated name
 
     """
+    # Building SVC from database
+
+    data_path = path.join(path.dirname(__file__), "../temp", "SVM.pkl")
+
+    if path.exists(data_path):
+        with open(data_path, 'rb') as f:
+            clf, pca, face_profile_names = load(f)
+    else:
+        clf, pca, face_profile_names = utils.save_data()
 
     img = img.ravel()
     # Apply dimensionality reduction on img, img is projected on the first principal components
@@ -49,7 +51,7 @@ def predict(clf, pca, img, face_profile_names):
     return name
 
 
-def errorRate(pred, actual):
+def error_rate(pred, actual):
     """
     Calculate name prediction error rate
 
@@ -63,17 +65,17 @@ def errorRate(pred, actual):
 
     Returns
     -------
-    error_rate: float
+    rate: float
         The calculated error rate
 
     """
     if pred.shape != actual.shape:
         return None
-    error_rate = np.count_nonzero(pred - actual) / float(pred.shape[0])
-    return error_rate
+    rate = np.count_nonzero(pred - actual) / float(pred.shape[0])
+    return rate
 
 
-def build_SVC(face_profile_data, face_profile_name_index, face_profile_names):
+def build_svc(face_profile_data, face_profile_name_index, face_profile_names):
     """
     Build the SVM classification modle using the face_profile_data matrix (numOfFace X numOfPixel)
     and face_profile_name_index array, face_dim is a tuple of the dimension of each image(h,w)
@@ -101,7 +103,6 @@ def build_SVC(face_profile_data, face_profile_name_index, face_profile_names):
         using approximated Singular Value Decomposition of the data
 
     """
-
     x = face_profile_data
     y = face_profile_name_index
 
@@ -147,21 +148,21 @@ def build_SVC(face_profile_data, face_profile_name_index, face_profile_names):
         'C': [1e3, 5e3, 1e4, 5e4, 1e5],
         'gamma': [0.0001, 0.0005, 0.001, 0.005, 0.01, 0.1],
     }
-    # clf = GridSearchCV(SVC(kernel='rbf', class_weight='balanced'), param_grid)
+    clf = GridSearchCV(SVC(kernel='rbf', class_weight='balanced'), param_grid)
 
-    clf = GridSearchCV(
-        SVC(cache_size=200,
-            class_weight='balanced',
-            coef0=0.0,
-            decision_function_shape=None,
-            degree=3,
-            kernel='rbf',
-            max_iter=-1,
-            probability=False,
-            random_state=None,
-            shrinking=True,
-            tol=0.001,
-            verbose=False), param_grid)
+    # clf = GridSearchCV(
+    #     SVC(kernel='rbf',
+    #         class_weight='balanced',
+    #         cache_size=200,
+    #         coef0=0.0,
+    #         decision_function_shape=None,
+    #         degree=3,
+    #         max_iter=-1,
+    #         probability=False,
+    #         random_state=None,
+    #         shrinking=True,
+    #         tol=0.001,
+    #         verbose=False), param_grid)
     clf = clf.fit(x_train_pca, y_train)
 
     print("done in %0.3fs" % (time() - t0))
@@ -179,8 +180,8 @@ def build_SVC(face_profile_data, face_profile_name_index, face_profile_names):
 
     # print "predicated names: ", y_pred
     # print "actual names: ", y_test
-    error_rate = errorRate(y_pred, y_test)
-    print("\nTest Error Rate: %0.4f %%" % (error_rate * 100))
-    print("Test Recognition Rate: %0.4f %%" % ((1.0 - error_rate) * 100))
+    rate = error_rate(y_pred, y_test)
+    print("\nTest Error Rate: %0.4f %%" % (rate * 100))
+    print("Test Recognition Rate: %0.4f %%" % ((1.0 - rate) * 100))
 
     return clf, pca, face_profile_names

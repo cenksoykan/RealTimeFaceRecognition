@@ -6,13 +6,13 @@ Summary: Utilties used for facial tracking in OpenCV
 """
 
 import os
-import pickle
-import errno
+from pickle import dump
+from errno import EEXIST
 import logging
 import shutil
 import numpy as np
 import cv2
-from svm import build_SVC
+from svm import build_svc
 
 ###############################################################################
 # Used For Facial Tracking and Traning in OpenCV
@@ -93,12 +93,9 @@ def clean_profile(face_profile_directory):
                       "because it contains no images")
             if index < 2:
                 logging.warning(
-                    "\n============================================" +
-                    "============================================\n" +
                     "\nFace profile \"" + str(profile_path) +
                     "\" contains very few images (At least 2 images are needed)\n"
-                    + "\n============================================" +
-                    "============================================\n")
+                )
                 profile_directory_list.remove(face_profile)
     return profile_directory_list
 
@@ -246,7 +243,7 @@ def create_directory(face_profile):
         print("Making directory")
         os.makedirs(face_profile)
     except OSError as exception:
-        if exception.errno != errno.EEXIST:
+        if exception.errno != EEXIST:
             print(
                 "The specified face profile already existed, it will be override"
             )
@@ -255,7 +252,7 @@ def create_directory(face_profile):
 
 def create_profile_in_database(face_profile_name,
                                database_path="../face_profiles/",
-                               clean_directory=False):
+                               clean_dir=False):
     """
     Create a face profile directory in the database
 
@@ -267,7 +264,7 @@ def create_profile_in_database(face_profile_name,
     database_path: string
         Default database directory
 
-    clean_directory: boolean
+    clean_dir: boolean
         Clean the directory if the user already exists
 
     Returns
@@ -280,18 +277,22 @@ def create_profile_in_database(face_profile_name,
         os.path.dirname(__file__), database_path, face_profile_name)
     create_directory(face_profile_path)
     # Delete all the pictures before recording new
-    if clean_directory:
+    if clean_dir:
         clean_directory(face_profile_path)
     return face_profile_path
 
 
 def save_data():
+    """
+    Saves image training data
+
+    """
     # Load training data from face_profiles/
     face_profile_data, face_profile_name_index, face_profile_names = load_training_data(
     )
 
     # Build the classifier
-    face_profile = build_SVC(face_profile_data, face_profile_name_index,
+    face_profile = build_svc(face_profile_data, face_profile_name_index,
                              face_profile_names)
 
     data_dir = os.path.join(os.path.dirname(__file__), "../temp")
@@ -302,7 +303,7 @@ def save_data():
 
     # Save the classifier
     with open(data_path, 'wb') as f:
-        pickle.dump(face_profile, f)
+        dump(face_profile, f)
 
-    print("Training data saved")
+    print("\nTraining data is saved\n")
     return face_profile
