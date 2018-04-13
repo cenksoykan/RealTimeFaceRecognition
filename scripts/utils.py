@@ -55,6 +55,7 @@ def read_images_from_single_face_profile(face_profile,
                     ".pgm"):
             img = cv2.imread(file_path, 0)
             img = cv2.resize(img, dim, interpolation=cv2.INTER_AREA)
+            img = cv2.convertScaleAbs(img)
             img_data = img.ravel()
             x_data = img_data if not x_data.shape[0] else np.vstack((x_data,
                                                                      img_data))

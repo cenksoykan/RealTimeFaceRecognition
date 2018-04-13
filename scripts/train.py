@@ -54,9 +54,9 @@ PROFILE_FOLDER_PATH = None
 
 # dictionary mapping used to keep track of head rotation maps
 ROTATION_MAPS = {
+    "middle": np.array([0, -30, 30]),
     "left": np.array([-30, 0, 30]),
     "right": np.array([30, 0, -30]),
-    "middle": np.array([0, -30, 30]),
 }
 
 
@@ -116,6 +116,7 @@ while RET:
         for r in CURRENT_ROTATION_MAP:
             ROTATED_FRAME = ndimage.rotate(RESIZED_FRAME, r)
             GRAY_FRAME = cv2.cvtColor(ROTATED_FRAME, cv2.COLOR_BGR2GRAY)
+            GRAY_FRAME = cv2.convertScaleAbs(GRAY_FRAME)
 
             # return tuple is empty, ndarray if detected face
             faces = FACE_CASCADE.detectMultiScale(
@@ -167,14 +168,14 @@ while RET:
         FRAME_SKIP_RATE -= 1
 
     cv2.putText(PROCESSED_FRAME, "Press ESC or 'q' to quit.", (5, 15),
-                cv2.FONT_HERSHEY_SIMPLEX, 0.4, (0, 255, 0))
+                cv2.FONT_HERSHEY_SIMPLEX, 0.4, (255, 255, 255))
 
     cv2.imshow("Face Recognition", PROCESSED_FRAME)
 
     if len(CROPPED_FACE):
-        if UNSAVED and NUM_OF_FACE_SAVED < NUM_OF_FACE_TO_COLLECT:
-            cv2.imshow("Recognized Face", CROPPED_FACE)
-            if KEY in [ord('P'), ord('p')]:
+        cv2.imshow("Recognized Face", CROPPED_FACE)
+        if NUM_OF_FACE_SAVED < NUM_OF_FACE_TO_COLLECT:
+            if UNSAVED and KEY in [ord('P'), ord('p')]:
                 FACE_TO_SAVE = cv2.resize(
                     CROPPED_FACE, FACE_DIM, interpolation=cv2.INTER_AREA)
                 FACE_NAME = sys.argv[1] + "-" + str(NUM_OF_FACE_SAVED) + ".pgm"

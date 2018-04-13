@@ -101,6 +101,7 @@ while RET:
         for r in CURRENT_ROTATION_MAP:
             ROTATED_FRAME = ndimage.rotate(RESIZED_FRAME, r)
             GRAY_FRAME = cv2.cvtColor(ROTATED_FRAME, cv2.COLOR_BGR2GRAY)
+            GRAY_FRAME = cv2.convertScaleAbs(GRAY_FRAME)
 
             # return tuple is empty, ndarray if detected face
             faces = FACE_CASCADE.detectMultiScale(
@@ -153,7 +154,7 @@ while RET:
     # print("Frame dimension: ", PROCESSED_FRAME.shape)
 
     cv2.putText(PROCESSED_FRAME, "Press ESC or 'q' to quit.", (5, 15),
-                cv2.FONT_HERSHEY_SIMPLEX, 0.4, (0, 255, 0))
+                cv2.FONT_HERSHEY_SIMPLEX, 0.4, (255, 255, 255))
 
     cv2.imshow("Face Recognition", PROCESSED_FRAME)
 
