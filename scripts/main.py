@@ -91,7 +91,8 @@ while RET:
         exit()
 
     # resize the captured frame for face detection to increase processing speed
-    RESIZED_FRAME = cv2.resize(FRAME, FRAME_SCALE)
+    RESIZED_FRAME = cv2.resize(
+        FRAME, FRAME_SCALE, interpolation=cv2.INTER_AREA)
     RESIZED_FRAME = cv2.flip(RESIZED_FRAME, 1)
 
     PROCESSED_FRAME = RESIZED_FRAME
@@ -113,7 +114,7 @@ while RET:
 
             # If frontal face detector failed, use profileface detector
             if not len(faces):
-                SIDEFACE_CASCADE.detectMultiScale(
+                faces = SIDEFACE_CASCADE.detectMultiScale(
                     GRAY_FRAME,
                     scaleFactor=1.3,
                     minNeighbors=5,

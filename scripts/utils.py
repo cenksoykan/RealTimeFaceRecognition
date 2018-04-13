@@ -12,7 +12,6 @@ import logging
 import shutil
 import numpy as np
 import cv2
-from svm import build_svc
 
 ###############################################################################
 # Used For Facial Tracking and Traning in OpenCV
@@ -288,13 +287,14 @@ def save_data():
     Saves image training data
 
     """
+    from svm import build_svc as svc
     # Load training data from face_profiles/
     face_profile_data, face_profile_name_index, face_profile_names = load_training_data(
     )
 
     # Build the classifier
-    face_profile = build_svc(face_profile_data, face_profile_name_index,
-                             face_profile_names)
+    face_profile = svc(face_profile_data, face_profile_name_index,
+                       face_profile_names)
 
     data_dir = os.path.join(os.path.dirname(__file__), "../temp")
     data_path = os.path.join(data_dir, "SVM.pkl")
