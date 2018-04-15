@@ -1,11 +1,7 @@
 """
-====================================================
-    Faces recognition and detection using OpenCV
-====================================================
-
-The dataset used is the Extended Yale Database B Cropped
-
-  http://vision.ucsd.edu/~leekc/ExtYaleDatabase/ExtYaleB.html
+========================
+    Face recognition
+========================
 
 Summary:
     Real time facial tracking and recognition using harrcascade and SVM
@@ -14,11 +10,8 @@ To Run:
     * To run it without options
         python main.py
 
-    * Or running with options (By default, scale_multiplier = 4):
-        python main.py [scale_multiplier=<full screensize divided by scale_multiplier>]
-
-    * Say you want to run with 1/2 of the full screen size, specify that scale_multiplier = 4:
-        python main.py 4
+    * To run it specify that the file you want to predict result
+        python main.py somePicture.pgm
 
 Usage:
     press 'q' or 'ESC' to quit the application
@@ -27,7 +20,6 @@ Usage:
 
 from os import path
 import sys
-import logging
 from scipy import ndimage
 import numpy as np
 import cv2
@@ -52,9 +44,24 @@ FACE_CASCADE = cv2.CascadeClassifier(FRONTALFACE)
 SIDEFACE_CASCADE = cv2.CascadeClassifier(PROFILEFACE)
 
 if len(sys.argv) == 2:
-    SCALE_FACTOR = float(sys.argv[1])
+    DATA_PATH = sys.argv[1]
+
+    if not path.exists(DATA_PATH):
+        print("\nError: There is no picture in this direction\n")
+        exit()
+
+    if utils.check_image_format(DATA_PATH):
+        FACE = cv2.imread(DATA_PATH, 0)
+    else:
+        print(
+            "\nError: File extension has to be one of these: png, jpg, jpeg, pgm\n"
+        )
+        exit()
+    print("This is picture of", "\"" + predict(FACE) + "\"")
+    exit()
 elif len(sys.argv) > 2:
-    logging.error("main.py ")
+    print("\nError: Specify only one picture at a time\n")
+    exit()
 
 # dictionary mapping used to keep track of head rotation maps
 ROTATION_MAPS = {
