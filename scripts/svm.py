@@ -3,17 +3,45 @@ Summary: SVM methods using Scikit
 
 """
 
-from os import path
+import os
 from time import time
+from pickle import dump
 from pickle import load
-import numpy as np
 
+import numpy as np
 from sklearn.svm import SVC
 from sklearn.decomposition import PCA
 from sklearn.model_selection import GridSearchCV
 from sklearn.model_selection import train_test_split
 
 import utils
+
+
+def fetch_data():
+    """
+    Saves and returns image training data
+
+    """
+    # Load training data from face_profiles/
+    face_profile_data, face_profile_name_index, face_profile_names = utils.load_training_data(
+    )
+
+    # Build the classifier
+    face_profile = build_svc(face_profile_data, face_profile_name_index,
+                             face_profile_names)
+
+    data_dir = os.path.join(os.path.dirname(__file__), "../temp")
+    data_path = os.path.join(data_dir, "SVM.pkl")
+
+    if not os.path.exists(data_dir):
+        os.mkdir(data_dir)
+
+    # Save the classifier
+    with open(data_path, 'wb') as f:
+        dump(face_profile, f)
+
+    print("\nTraining data is saved\n")
+    return face_profile
 
 
 def predict(img):
@@ -34,13 +62,13 @@ def predict(img):
     """
     # Building SVC from database
 
-    data_path = path.join(path.dirname(__file__), "../temp", "SVM.pkl")
+    data_path = os.path.join(os.path.dirname(__file__), "../temp", "SVM.pkl")
 
-    if path.exists(data_path):
+    if os.path.exists(data_path):
         with open(data_path, 'rb') as f:
             clf, pca, face_profile_names = load(f)
     else:
-        clf, pca, face_profile_names = utils.save_data()
+        clf, pca, face_profile_names = fetch_data()
 
     img = img.ravel()
     # Apply dimensionality reduction on img, img is projected on the first principal components

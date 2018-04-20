@@ -6,10 +6,10 @@ Summary: Utilties used for facial tracking in OpenCV
 """
 
 import os
-from pickle import dump
-from errno import EEXIST
 import logging
 import shutil
+from errno import EEXIST
+
 import numpy as np
 import cv2
 
@@ -33,16 +33,12 @@ def check_image_format(img):
     Check if image format is one of these: png, jpg, jpeg, pgm
 
     """
-    if img.endswith(".png") or img.endswith(".jpg") or img.endswith(
-            ".jpeg") or img.endswith(".pgm"):
-        return True
-    else:
-        return False
+    extensions = img.endswith(".png") or img.endswith(".jpg") or img.endswith(
+        ".jpeg") or img.endswith(".pgm")
+    return bool(extensions)
 
 
-def read_images_from_single_face_profile(face_profile,
-                                         face_profile_name_index,
-                                         dim=(50, 50)):
+def read_face_profile(face_profile, face_profile_name_index, dim=(50, 50)):
     """
     Reads all the images from one specified face profile into ndarrays
 
@@ -151,15 +147,14 @@ def load_training_data():
 
     first_data_name = str(face_profile_names[0])
     first_data_path = os.path.join(face_profile_directory, first_data_name)
-    x_data, y_data = read_images_from_single_face_profile(first_data_path, 0)
+    x_data, y_data = read_face_profile(first_data_path, 0)
     print("Loading Database:")
     print(1, "\t->", x_data.shape[0], "images are loaded from",
           "\"" + first_data_name + "\"")
     for i in range(1, len(face_profile_names)):
         directory_name = str(face_profile_names[i])
         directory_path = os.path.join(face_profile_directory, directory_name)
-        temp_x, temp_y = read_images_from_single_face_profile(
-            directory_path, i)
+        temp_x, temp_y = read_face_profile(directory_path, i)
         x_data = np.concatenate((x_data, temp_x), axis=0)
         y_data = np.append(y_data, temp_y)
         print(i + 1, "\t->", temp_x.shape[0], "images are loaded from",
@@ -299,34 +294,6 @@ def create_profile_in_database(face_profile_name,
     if clean_dir:
         clean_directory(face_profile_path)
     return face_profile_path
-
-
-def save_data():
-    """
-    Saves image training data
-
-    """
-    from svm import build_svc as svc
-    # Load training data from face_profiles/
-    face_profile_data, face_profile_name_index, face_profile_names = load_training_data(
-    )
-
-    # Build the classifier
-    face_profile = svc(face_profile_data, face_profile_name_index,
-                       face_profile_names)
-
-    data_dir = os.path.join(os.path.dirname(__file__), "../temp")
-    data_path = os.path.join(data_dir, "SVM.pkl")
-
-    if not os.path.exists(data_dir):
-        os.mkdir(data_dir)
-
-    # Save the classifier
-    with open(data_path, 'wb') as f:
-        dump(face_profile, f)
-
-    print("\nTraining data is saved\n")
-    return face_profile
 
 
 def get_rotation_map(rotation):
