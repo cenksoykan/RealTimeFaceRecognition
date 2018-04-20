@@ -29,14 +29,18 @@ Usage during run time:
 
 """
 
-import os
+from os import listdir
+from os import path
 import sys
+
 from scipy import ndimage
 import cv2
+
 import utils
+from svm import fetch_data
 
 if len(sys.argv) == 1:
-    utils.save_data()
+    fetch_data()
     exit()
 elif len(sys.argv) > 2:
     print("\nError: More Than One Saving Directory Specified\n")
@@ -59,8 +63,8 @@ NUM_OF_FACE_TO_COLLECT = 150
 NUM_OF_FACE_SAVED = 0
 UNSAVED = True
 
-for picture in os.listdir(PROFILE_FOLDER_PATH):
-    file_path = os.path.join(PROFILE_FOLDER_PATH, picture)
+for picture in listdir(PROFILE_FOLDER_PATH):
+    file_path = path.join(PROFILE_FOLDER_PATH, picture)
     if utils.check_image_format(file_path):
         NUM_OF_FACE_SAVED += 1
 
@@ -130,7 +134,7 @@ while RET:
                 FACE_TO_SAVE = cv2.resize(
                     CROPPED_FACE, FACE_DIM, interpolation=cv2.INTER_AREA)
                 FACE_NAME = sys.argv[1] + "-" + str(NUM_OF_FACE_SAVED) + ".pgm"
-                IMG_PATH = os.path.join(PROFILE_FOLDER_PATH, FACE_NAME)
+                IMG_PATH = path.join(PROFILE_FOLDER_PATH, FACE_NAME)
                 cv2.imwrite(IMG_PATH, FACE_TO_SAVE)
                 NUM_OF_FACE_SAVED += 1
                 UNSAVED = False

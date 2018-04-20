@@ -20,8 +20,10 @@ Usage:
 
 from os import path
 import sys
+
 from scipy import ndimage
 import cv2
+
 import utils
 from svm import predict
 
