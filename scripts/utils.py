@@ -13,8 +13,26 @@ import shutil
 import numpy as np
 import cv2
 
+FRONTALFACE = os.path.join(
+    os.path.dirname(cv2.__file__), "data",
+    "haarcascade_frontalface_default.xml")
+PROFILEFACE = os.path.join(
+    os.path.dirname(cv2.__file__), "data", "haarcascade_profileface.xml")
+FACE_CASCADE = cv2.CascadeClassifier(FRONTALFACE)
+SIDEFACE_CASCADE = cv2.CascadeClassifier(PROFILEFACE)
+
+ROTATION_MAPS = {
+    "middle": np.array([0, -30, 30]),
+    "left": np.array([-30, 0, 30]),
+    "right": np.array([30, 0, -30]),
+}
+
 
 def check_image_format(img):
+    """
+    Check if image format is one of these: png, jpg, jpeg, pgm
+
+    """
     if img.endswith(".png") or img.endswith(".jpg") or img.endswith(
             ".jpeg") or img.endswith(".pgm"):
         return True
@@ -309,3 +327,40 @@ def save_data():
 
     print("\nTraining data is saved\n")
     return face_profile
+
+
+def get_rotation_map(rotation):
+    """
+    Takes in an angle rotation, and returns an optimized rotation map
+
+    """
+    if rotation > 0:
+        return ROTATION_MAPS.get("right", None)
+    elif rotation < 0:
+        return ROTATION_MAPS.get("left", None)
+    return ROTATION_MAPS.get("middle", None)
+
+
+def detect_faces(frame):
+    """
+    Detect faces in frame
+
+    """
+    # return tuple is empty, ndarray if detected face
+    faces = FACE_CASCADE.detectMultiScale(
+        frame,
+        scaleFactor=1.3,
+        minNeighbors=5,
+        minSize=(30, 30),
+        flags=cv2.CASCADE_SCALE_IMAGE)
+
+    # If frontal face detector failed, use profileface detector
+    if not len(faces):
+        faces = SIDEFACE_CASCADE.detectMultiScale(
+            frame,
+            scaleFactor=1.3,
+            minNeighbors=5,
+            minSize=(30, 30),
+            flags=cv2.CASCADE_SCALE_IMAGE)
+
+    return faces

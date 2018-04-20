@@ -31,46 +31,9 @@ Usage during run time:
 
 import os
 import sys
-import numpy as np
 from scipy import ndimage
 import cv2
 import utils
-
-FACE_DIM = (50, 50)
-DISPLAY_FACE_DIM = (200, 200)
-SKIP_FRAME = 2  # the fixed skip frame
-FRAME_SKIP_RATE = 0  # skip SKIP_FRAME frames every other frame
-SCALE_FACTOR = 2  # used to resize the captured frame for face detection for faster processing speed
-FRONTALFACE = os.path.join(
-    os.path.dirname(cv2.__file__), "data",
-    "haarcascade_frontalface_default.xml")
-PROFILEFACE = os.path.join(
-    os.path.dirname(cv2.__file__), "data", "haarcascade_profileface.xml")
-FACE_CASCADE = cv2.CascadeClassifier(FRONTALFACE)
-SIDEFACE_CASCADE = cv2.CascadeClassifier(PROFILEFACE)
-
-#  For saving face data to directory
-PROFILE_FOLDER_PATH = None
-
-# dictionary mapping used to keep track of head rotation maps
-ROTATION_MAPS = {
-    "middle": np.array([0, -30, 30]),
-    "left": np.array([-30, 0, 30]),
-    "right": np.array([30, 0, -30]),
-}
-
-
-def get_rotation_map(rotation):
-    """
-    Takes in an angle rotation, and returns an optimized rotation map
-
-    """
-    if rotation > 0:
-        return ROTATION_MAPS.get("right", None)
-    elif rotation < 0:
-        return ROTATION_MAPS.get("left", None)
-    return ROTATION_MAPS.get("middle", None)
-
 
 if len(sys.argv) == 1:
     utils.save_data()
@@ -81,12 +44,16 @@ elif len(sys.argv) > 2:
 else:
     PROFILE_FOLDER_PATH = utils.create_profile_in_database(sys.argv[1])
 
-CURRENT_ROTATION_MAP = get_rotation_map(0)
+FACE_DIM = (50, 50)
+DISPLAY_FACE_DIM = (200, 200)
+SKIP_FRAME = 2  # the fixed skip frame
+FRAME_SKIP_RATE = 0  # skip SKIP_FRAME frames every other frame
+SCALE_FACTOR = 2  # used to resize the captured frame for face detection for faster processing speed
+CURRENT_ROTATION_MAP = utils.get_rotation_map(0)
 WEBCAM = cv2.VideoCapture(0)
 RET, FRAME = WEBCAM.read()  # get first frame
 FRAME_SCALE = (int(FRAME.shape[1] / SCALE_FACTOR),
                int(FRAME.shape[0] / SCALE_FACTOR))  # (y, x)
-
 CROPPED_FACE = []
 NUM_OF_FACE_TO_COLLECT = 150
 NUM_OF_FACE_SAVED = 0
@@ -94,9 +61,7 @@ UNSAVED = True
 
 for picture in os.listdir(PROFILE_FOLDER_PATH):
     file_path = os.path.join(PROFILE_FOLDER_PATH, picture)
-    if file_path.endswith(".png") or file_path.endswith(
-            ".jpg") or file_path.endswith(".jpeg") or file_path.endswith(
-                ".pgm"):
+    if utils.check_image_format(file_path):
         NUM_OF_FACE_SAVED += 1
 
 while RET:
@@ -119,22 +84,7 @@ while RET:
             GRAY_FRAME = cv2.cvtColor(ROTATED_FRAME, cv2.COLOR_BGR2GRAY)
             GRAY_FRAME = cv2.convertScaleAbs(GRAY_FRAME)
 
-            # return tuple is empty, ndarray if detected face
-            faces = FACE_CASCADE.detectMultiScale(
-                GRAY_FRAME,
-                scaleFactor=1.3,
-                minNeighbors=5,
-                minSize=(30, 30),
-                flags=cv2.CASCADE_SCALE_IMAGE)
-
-            # If frontal face detector failed, use profileface detector
-            if not len(faces):
-                faces = SIDEFACE_CASCADE.detectMultiScale(
-                    GRAY_FRAME,
-                    scaleFactor=1.3,
-                    minNeighbors=5,
-                    minSize=(30, 30),
-                    flags=cv2.CASCADE_SCALE_IMAGE)
+            faces = utils.detect_faces(GRAY_FRAME)
 
             if len(faces):
                 for f in faces:
@@ -156,7 +106,7 @@ while RET:
                 PROCESSED_FRAME = utils.trim(PROCESSED_FRAME, FRAME_SCALE)
 
                 # reset the optimized rotation map
-                CURRENT_ROTATION_MAP = get_rotation_map(r)
+                CURRENT_ROTATION_MAP = utils.get_rotation_map(r)
                 FACEFOUND = True
                 UNSAVED = True
                 break
