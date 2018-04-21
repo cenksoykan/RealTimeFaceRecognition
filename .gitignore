@@ -1,6 +1,3 @@
-/face_profiles
-!/face_profiles/yaleB*
-/temp
 
 # Created by https://www.gitignore.io/api/git,vim,macos,linux,emacs,python,windows,sublimetext,visualstudiocode
 
@@ -287,3 +284,9 @@ $RECYCLE.BIN/
 
 
 # End of https://www.gitignore.io/api/git,vim,macos,linux,emacs,python,windows,sublimetext,visualstudiocode
+
+# Custom rules
+
+/face_profiles
+!/face_profiles/yaleB*
+/temp
