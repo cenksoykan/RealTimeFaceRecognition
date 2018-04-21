@@ -48,8 +48,8 @@ elif len(sys.argv) > 2:
 else:
     PROFILE_FOLDER_PATH = utils.create_profile_in_database(sys.argv[1])
 
-FACE_DIM = (50, 50)
-DISPLAY_FACE_DIM = (200, 200)
+FACE_DIM = (32, 32)
+DISPLAY_FACE_DIM = (256, 256)
 SKIP_FRAME = 2  # the fixed skip frame
 FRAME_SKIP_RATE = 0  # skip SKIP_FRAME frames every other frame
 SCALE_FACTOR = 2  # used to resize the captured frame for face detection for faster processing speed
@@ -59,7 +59,7 @@ RET, FRAME = WEBCAM.read()  # get first frame
 FRAME_SCALE = (int(FRAME.shape[1] / SCALE_FACTOR),
                int(FRAME.shape[0] / SCALE_FACTOR))  # (y, x)
 CROPPED_FACE = []
-NUM_OF_FACE_TO_COLLECT = 150
+NUM_OF_FACE_TO_COLLECT = 128
 NUM_OF_FACE_SAVED = 0
 UNSAVED = True
 

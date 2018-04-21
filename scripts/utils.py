@@ -38,7 +38,7 @@ def check_image_format(img):
     return bool(extensions)
 
 
-def read_face_profile(face_profile, face_profile_name_index, dim=(50, 50)):
+def read_face_profile(face_profile, face_profile_name_index, dim=(32, 32)):
     """
     Reads all the images from one specified face profile into ndarrays
 
@@ -93,6 +93,7 @@ def clean_profile(face_profile_directory):
         The directory path of the specified face profile directory
 
     """
+    img_min = 10
     profile_directory_list = os.listdir(face_profile_directory)
     for face_profile in profile_directory_list:
         if "." not in str(face_profile):
@@ -104,13 +105,13 @@ def clean_profile(face_profile_directory):
                     index += 1
             if index == 0:
                 shutil.rmtree(profile_path)
-                print("\nDeleted", profile_path,
-                      "because it contains no images")
-            if index < 2:
                 logging.warning(
-                    "\nFace profile \"" + str(profile_path) +
-                    "\" contains very few images (At least 2 images are needed)\n"
-                )
+                    "\nDeleted \"%s\" because it contains no images" %
+                    face_profile)
+            if index < img_min:
+                logging.warning(
+                    "\nProfile \"%s\" contains very few images (At least %d images are needed)\n"
+                    % (face_profile, img_min))
                 profile_directory_list.remove(face_profile)
     return profile_directory_list
 
@@ -159,8 +160,6 @@ def load_training_data():
         y_data = np.append(y_data, temp_y)
         print(i + 1, "\t->", temp_x.shape[0], "images are loaded from",
               "\"" + directory_name + "\"")
-    print("\n" + str(y_data.shape[0]), "samples from", len(face_profile_names),
-          "people are loaded")
     return x_data, y_data, face_profile_names
 
 

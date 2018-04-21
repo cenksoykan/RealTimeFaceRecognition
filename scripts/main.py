@@ -36,21 +36,21 @@ if len(sys.argv) == 2:
         print("\nError: There is no picture in this direction\n")
         exit()
 
-    if utils.check_image_format(DATA_PATH):
-        FACE = cv2.imread(DATA_PATH, 0)
-    else:
+    if not utils.check_image_format(DATA_PATH):
         print(
             "\nError: File extension has to be one of these: png, jpg, jpeg, pgm\n"
         )
         exit()
-    print("This is picture of", "\"" + predict(FACE) + "\"")
+
+    PREDICTION_NAME = predict(DATA_PATH)
+    print("This is picture of \"%s\"" % PREDICTION_NAME)
     exit()
 elif len(sys.argv) > 2:
     print("\nError: Specify only one picture at a time\n")
     exit()
 
-FACE_DIM = (50, 50)  # h = 50, w = 50
-DISPLAY_FACE_DIM = (200, 200)  # the displayed video stream screen dimension
+FACE_DIM = (32, 32)  # h = 32, w = 32
+DISPLAY_FACE_DIM = (256, 256)  # the displayed video stream screen dimension
 SKIP_FRAME = 2  # the fixed skip frame
 FRAME_SKIP_RATE = 0  # skip SKIP_FRAME frames every other frame
 SCALE_FACTOR = 2  # used to resize the captured frame for face detection for faster processing speed
