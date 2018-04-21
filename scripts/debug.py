@@ -18,7 +18,7 @@ if not path.exists(DATA_PATH):
     print("\nError: There is no picture in this direction\n")
     exit()
 
-if not utils.check_image_format(DATA_PATH):
+if utils.check_image_format(DATA_PATH):
     print(
         "\nError: File extension has to be one of these: png, jpg, jpeg, pgm\n"
     )
@@ -26,6 +26,7 @@ if not utils.check_image_format(DATA_PATH):
 
 fetch_data()
 
-PREDICTION_NAME = predict(DATA_PATH)
+FACE = cv2.imread(DATA_PATH, 0)
+PREDICTION_NAME = predict(FACE)
 print("This is picture of", "\"" + PREDICTION_NAME + "\"")
 exit()

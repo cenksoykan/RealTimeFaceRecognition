@@ -42,7 +42,8 @@ if len(sys.argv) == 2:
         )
         exit()
 
-    PREDICTION_NAME = predict(DATA_PATH)
+    FACE = cv2.imread(DATA_PATH, 0)
+    PREDICTION_NAME = predict(FACE)
     print("This is picture of \"%s\"" % PREDICTION_NAME)
     exit()
 elif len(sys.argv) > 2:

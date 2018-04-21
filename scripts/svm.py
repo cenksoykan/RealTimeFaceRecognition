@@ -221,7 +221,7 @@ def fetch_data():
     return face_profile
 
 
-def predict(image):
+def predict(img):
     """
     Predict the name of the supplied image from the list of face profile names
 
@@ -247,7 +247,6 @@ def predict(image):
     else:
         clf, pca, face_profile_names = fetch_data()
 
-    img = cv2.imread(image, 0)
     img = cv2.resize(img, FACE_DIM, interpolation=cv2.INTER_AREA)
     img = cv2.convertScaleAbs(img)
     img = img.ravel()
