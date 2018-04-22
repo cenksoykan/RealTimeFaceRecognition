@@ -18,7 +18,7 @@ if not path.exists(DATA_PATH):
     print("\nError: There is no picture in this direction\n")
     exit()
 
-if utils.check_image_format(DATA_PATH):
+if not utils.check_image_format(DATA_PATH):
     print(
         "\nError: File extension has to be one of these: png, jpg, jpeg, pgm\n"
     )
