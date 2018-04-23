@@ -7,7 +7,7 @@ Summary: Utilties used for facial tracking in OpenCV
 
 import os
 import logging
-import shutil
+from shutil import rmtree
 from errno import EEXIST
 
 import numpy as np
@@ -55,7 +55,7 @@ def read_face_profile(face_profile, face_profile_name_index, dim=(32, 32)):
 
     Returns
     -------
-    x_data : numpy array, shape = (number_of_faces_in_one_face_profile, face_pixel_width * face_pixel_height)
+    x_data : numpy array, shape = (number_of_faces_in_one_profile, pixel_width * pixel_height)
         A face data array contains the face image pixel rgb values of all the images
         in the specified face profile
 
@@ -72,9 +72,8 @@ def read_face_profile(face_profile, face_profile_name_index, dim=(32, 32)):
             img = cv2.imread(file_path, 0)
             img = cv2.resize(img, dim, interpolation=cv2.INTER_AREA)
             img = cv2.convertScaleAbs(img)
-            img_data = img.ravel()
-            x_data = img_data if not x_data.shape[0] else np.vstack((x_data,
-                                                                     img_data))
+            img = img.ravel()
+            x_data = img if not x_data.shape[0] else np.vstack((x_data, img))
             index += 1
 
     y_data = np.empty(index, dtype=int)
@@ -104,14 +103,14 @@ def clean_profile(face_profile_directory):
                 if check_image_format(file_path):
                     index += 1
             if index == 0:
-                shutil.rmtree(profile_path)
+                rmtree(profile_path)
                 logging.warning(
-                    "\nDeleted \"%s\" because it contains no images" %
+                    "\nDeleted \"%s\" because it contains no images",
                     face_profile)
             if index < img_min:
                 logging.warning(
-                    "\nProfile \"%s\" contains very few images (At least %d images are needed)\n"
-                    % (face_profile, img_min))
+                    "\nProfile \"%s\" contains very few images (At least %d images are needed)\n",
+                    face_profile, img_min)
                 profile_directory_list.remove(face_profile)
     return profile_directory_list
 
@@ -122,7 +121,7 @@ def load_training_data():
 
     Returns
     -------
-    x_data : numpy array, shape = (number_of_faces_in_face_profiles, face_pixel_width * face_pixel_height)
+    x_data : numpy array, shape = (number_of_faces_in_profiles, pixel_width * pixel_height)
         A face data array contains the face image pixel rgb values of all face_profiles
 
     y_data : numpy array, shape = (number_of_face_profiles, 1)
@@ -186,9 +185,10 @@ def rotate_image(img, rotation, scale=1.0):
     """
     if rotation == 0:
         return img
-    h, w = img.shape[:2]
-    rot_mat = cv2.getRotationMatrix2D((w / 2, h / 2), rotation, scale)
-    rot_img = cv2.warpAffine(img, rot_mat, (w, h), flags=cv2.INTER_LINEAR)
+    height, width = img.shape[:2]
+    rot_mat = cv2.getRotationMatrix2D((width / 2, height / 2), rotation, scale)
+    rot_img = cv2.warpAffine(
+        img, rot_mat, (width, height), flags=cv2.INTER_LINEAR)
     return rot_img
 
 
@@ -234,12 +234,10 @@ def clean_directory(face_profile):
 
     for the_file in os.listdir(face_profile):
         file_path = os.path.join(face_profile, the_file)
-        try:
-            if os.path.isfile(file_path):
-                os.unlink(file_path)
-            #elif os.path.isdir(file_path): shutil.rmtree(file_path)
-        except Exception as e:
-            print(e)
+        if os.path.isfile(file_path):
+            os.unlink(file_path)
+        elif os.path.isdir(file_path):
+            rmtree(file_path)
 
 
 def create_directory(face_profile):

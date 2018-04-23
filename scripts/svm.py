@@ -99,11 +99,11 @@ def build_svc(face_profile_data, face_profile_name_index, face_profile_names):
     print("\nExtracting the top %d eigenfaces from %d faces" %
           (n_components, x_train.shape[0]))
 
-    t0 = time()
+    t_0 = time()
     pca = PCA(
         n_components=n_components, svd_solver='randomized',
         whiten=True).fit(x_train)
-    print("done in %.3fs" % (time() - t0))
+    print("done in %.3fs" % (time() - t_0))
 
     # eigenfaces = pca.components_.reshape((n_components, FACE_DIM[0],
     #                                       FACE_DIM[1]))
@@ -114,15 +114,15 @@ def build_svc(face_profile_data, face_profile_name_index, face_profile_names):
     # eigenfaces = pca.components_.reshape((pca.components_.shape[0], FACE_DIM[0], FACE_DIM[1]))
 
     print("Projecting the input data on the eigenfaces orthonormal basis")
-    t0 = time()
+    t_0 = time()
     x_train_pca = pca.transform(x_train)
     x_test_pca = pca.transform(x_test)
-    print("done in %.3fs" % (time() - t0))
+    print("done in %.3fs" % (time() - t_0))
 
     # Train a SVM classification model
 
     print("Fitting the classifier to the training set")
-    t0 = time()
+    t_0 = time()
     param_grid = {
         'C': [1e3, 5e3, 1e4, 5e4, 1e5],
         'gamma': [1e-4, 5e-4, 1e-3, 5e-3, 0.01, 0.1],
@@ -144,7 +144,7 @@ def build_svc(face_profile_data, face_profile_name_index, face_profile_names):
     #         verbose=False), param_grid)
     clf = clf.fit(x_train_pca, y_train)
 
-    print("done in %.3fs" % (time() - t0))
+    print("done in %.3fs" % (time() - t_0))
     print("Best estimator found by grid search:")
     # print(clf.best_estimator_)
 
@@ -152,10 +152,10 @@ def build_svc(face_profile_data, face_profile_name_index, face_profile_names):
     # Quantitative evaluation of the model quality on the test set
 
     print("\nPredicting people's names on the test set")
-    t0 = time()
+    t_0 = time()
     y_pred = clf.predict(x_test_pca)
     print("\nPrediction took %.8fs per sample on average" %
-          ((time() - t0) / float(y_pred.shape[0])))
+          ((time() - t_0) / float(y_pred.shape[0])))
 
     # print(
     #     classification_report(y_test, y_pred, target_names=face_profile_names))
@@ -214,14 +214,14 @@ def fetch_data():
         os.mkdir(data_dir)
 
     # Save the classifier
-    with open(data_path, 'wb') as f:
-        dump(face_profile, f)
+    with open(data_path, 'wb') as file:
+        dump(face_profile, file)
 
     print("\nTraining data is successfully saved\n")
     return face_profile
 
 
-def predict(img):
+def predict(face):
     """
     Predict the name of the supplied image from the list of face profile names
 
@@ -242,12 +242,12 @@ def predict(img):
     data_path = os.path.join(os.path.dirname(__file__), "../temp", "SVM.pkl")
 
     if os.path.exists(data_path):
-        with open(data_path, 'rb') as f:
-            clf, pca, face_profile_names = load(f)
+        with open(data_path, 'rb') as file:
+            clf, pca, face_profile_names = load(file)
     else:
         clf, pca, face_profile_names = fetch_data()
 
-    img = cv2.resize(img, FACE_DIM, interpolation=cv2.INTER_AREA)
+    img = cv2.resize(face, FACE_DIM, interpolation=cv2.INTER_AREA)
     img = cv2.convertScaleAbs(img)
     img = img.ravel()
     # Apply dimensionality reduction on img, img is projected on the first principal components
