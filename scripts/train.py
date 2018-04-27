@@ -48,8 +48,7 @@ elif len(sys.argv) > 2:
 else:
     PROFILE_FOLDER_PATH = utils.create_profile_in_database(sys.argv[1])
 
-FACE_DIM = (32, 32)
-DISPLAY_FACE_DIM = (256, 256)
+DISPLAY_FACE_DIM = (128, 128)
 SKIP_FRAME = 2  # the fixed skip frame
 FRAME_SKIP_RATE = 0  # skip SKIP_FRAME frames every other frame
 SCALE_FACTOR = 2  # used to resize the captured frame for face detection for faster processing speed
@@ -85,19 +84,17 @@ while RET:
         FACEFOUND = False
         for r in CURRENT_ROTATION_MAP:
             ROTATED_FRAME = ndimage.rotate(RESIZED_FRAME, r)
-            GRAY_FRAME = cv2.cvtColor(ROTATED_FRAME, cv2.COLOR_BGR2GRAY)
-            GRAY_FRAME = cv2.convertScaleAbs(GRAY_FRAME)
 
-            faces = utils.detect_faces(GRAY_FRAME)
+            faces = utils.detect_faces(ROTATED_FRAME)
 
             if len(faces):
                 for f in faces:
                     x, y, w, h = [v for v in f]
-                    CROPPED_FACE = GRAY_FRAME[y:y + h, x:x + w]
+                    CROPPED_FACE = ROTATED_FRAME[y:y + h, x:x + w]
+                    CROPPED_FACE = cv2.cvtColor(CROPPED_FACE,
+                                                cv2.COLOR_BGR2GRAY)
                     CROPPED_FACE = cv2.resize(
-                        CROPPED_FACE,
-                        DISPLAY_FACE_DIM,
-                        interpolation=cv2.INTER_AREA)
+                        CROPPED_FACE, DISPLAY_FACE_DIM, interpolation=cv2.INTER_AREA)
                     CROPPED_FACE = cv2.flip(CROPPED_FACE, 1)
 
                     cv2.rectangle(ROTATED_FRAME, (x, y), (x + w, y + h),
@@ -131,11 +128,9 @@ while RET:
         cv2.imshow("Recognized Face", CROPPED_FACE)
         if NUM_OF_FACE_SAVED < NUM_OF_FACE_TO_COLLECT:
             if UNSAVED and KEY in [ord('P'), ord('p')]:
-                FACE_TO_SAVE = cv2.resize(
-                    CROPPED_FACE, FACE_DIM, interpolation=cv2.INTER_AREA)
                 FACE_NAME = sys.argv[1] + "-" + str(NUM_OF_FACE_SAVED) + ".pgm"
                 IMG_PATH = path.join(PROFILE_FOLDER_PATH, FACE_NAME)
-                cv2.imwrite(IMG_PATH, FACE_TO_SAVE)
+                cv2.imwrite(IMG_PATH, CROPPED_FACE)
                 NUM_OF_FACE_SAVED += 1
                 UNSAVED = False
                 print("Picture is saved:", FACE_NAME)

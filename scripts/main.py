@@ -50,8 +50,6 @@ elif len(sys.argv) > 2:
     print("\nError: Specify only one picture at a time\n")
     exit()
 
-FACE_DIM = (32, 32)  # h = 32, w = 32
-DISPLAY_FACE_DIM = (256, 256)  # the displayed video stream screen dimension
 SKIP_FRAME = 2  # the fixed skip frame
 FRAME_SKIP_RATE = 0  # skip SKIP_FRAME frames every other frame
 SCALE_FACTOR = 2  # used to resize the captured frame for face detection for faster processing speed
@@ -79,18 +77,16 @@ while RET:
         FACEFOUND = False
         for r in CURRENT_ROTATION_MAP:
             ROTATED_FRAME = ndimage.rotate(RESIZED_FRAME, r)
-            GRAY_FRAME = cv2.cvtColor(ROTATED_FRAME, cv2.COLOR_BGR2GRAY)
-            GRAY_FRAME = cv2.convertScaleAbs(GRAY_FRAME)
 
-            faces = utils.detect_faces(GRAY_FRAME)
+            faces = utils.detect_faces(ROTATED_FRAME)
 
             if len(faces):
                 for f in faces:
                     # Crop out the face
                     x, y, w, h = [v for v in f]
-                    CROPPED_FACE = GRAY_FRAME[y:y + h, x:x + w]
-                    CROPPED_FACE = cv2.resize(
-                        CROPPED_FACE, FACE_DIM, interpolation=cv2.INTER_AREA)
+                    CROPPED_FACE = ROTATED_FRAME[y:y + h, x:x + w]
+                    CROPPED_FACE = cv2.cvtColor(CROPPED_FACE,
+                                                cv2.COLOR_BGR2GRAY)
                     CROPPED_FACE = cv2.flip(CROPPED_FACE, 1)
 
                     name_to_display = predict(CROPPED_FACE)
