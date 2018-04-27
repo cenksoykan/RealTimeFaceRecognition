@@ -13,6 +13,7 @@ from errno import EEXIST
 import numpy as np
 import cv2
 
+FACE_DIM = (50, 50)
 FRONTALFACE = os.path.join(
     os.path.dirname(cv2.__file__), "data",
     "haarcascade_frontalface_default.xml")
@@ -28,7 +29,7 @@ ROTATION_MAPS = {
 }
 
 
-def check_image_format(img):
+def check_image_format(img: str):
     """
     Check if image format is one of these: png, jpg, jpeg, pgm
 
@@ -38,7 +39,7 @@ def check_image_format(img):
     return bool(extensions)
 
 
-def read_face_profile(face_profile, face_profile_name_index, dim=(32, 32)):
+def read_face_profile(face_profile: str, face_profile_name_index: int):
     """
     Reads all the images from one specified face profile into ndarrays
 
@@ -70,7 +71,7 @@ def read_face_profile(face_profile, face_profile_name_index, dim=(32, 32)):
         file_path = os.path.join(face_profile, the_file)
         if check_image_format(file_path):
             img = cv2.imread(file_path, 0)
-            img = cv2.resize(img, dim, interpolation=cv2.INTER_AREA)
+            img = cv2.resize(img, FACE_DIM, interpolation=cv2.INTER_AREA)
             img = cv2.convertScaleAbs(img)
             img = img.ravel()
             x_data = img if not x_data.shape[0] else np.vstack((x_data, img))
@@ -81,7 +82,7 @@ def read_face_profile(face_profile, face_profile_name_index, dim=(32, 32)):
     return x_data, y_data
 
 
-def clean_profile(face_profile_directory):
+def clean_profile(face_profile_directory: str):
     """
     Deletes empty face profiles in face profile directory
     and logs error if face profiles contain very few images
@@ -162,7 +163,7 @@ def load_training_data():
     return x_data, y_data, face_profile_names
 
 
-def rotate_image(img, rotation, scale=1.0):
+def rotate_image(image: str, rotation: int, scale: float = 1.0):
     """
     Rotate an image rgb matrix with the same dimensions
 
@@ -184,22 +185,22 @@ def rotate_image(img, rotation, scale=1.0):
 
     """
     if rotation == 0:
-        return img
-    height, width = img.shape[:2]
+        return image
+    height, width = image.shape[:2]
     rot_mat = cv2.getRotationMatrix2D((width / 2, height / 2), rotation, scale)
     rot_img = cv2.warpAffine(
-        img, rot_mat, (width, height), flags=cv2.INTER_LINEAR)
+        image, rot_mat, (width, height), flags=cv2.INTER_LINEAR)
     return rot_img
 
 
-def trim(img, dim):
+def trim(image: str, dim: tuple):
     """
     Trim the four sides(black paddings) of the image matrix
     and crop out the middle with a new dimension
 
     Parameters
     ----------
-    img: string
+    image: string
         the image rgb matrix
 
     dim: tuple (int, int)
@@ -213,15 +214,15 @@ def trim(img, dim):
     """
 
     # if the img has a smaller dimension then return the origin image
-    if dim[1] >= img.shape[0] and dim[0] >= img.shape[1]:
-        return img
-    x = int((img.shape[0] - dim[1]) / 2) + 1
-    y = int((img.shape[1] - dim[0]) / 2) + 1
-    trimmed_img = img[x:x + dim[1], y:y + dim[0]]  # crop the image
+    if dim[1] >= image.shape[0] and dim[0] >= image.shape[1]:
+        return image
+    x = int((image.shape[0] - dim[1]) / 2) + 1
+    y = int((image.shape[1] - dim[0]) / 2) + 1
+    trimmed_img = image[x:x + dim[1], y:y + dim[0]]  # crop the image
     return trimmed_img
 
 
-def clean_directory(face_profile):
+def clean_directory(face_profile: str):
     """
     Deletes all the files in the specified face profile
 
@@ -240,7 +241,7 @@ def clean_directory(face_profile):
             rmtree(file_path)
 
 
-def create_directory(face_profile):
+def create_directory(face_profile: str):
     """
     Create a face profile directory for saving images
 
@@ -261,9 +262,9 @@ def create_directory(face_profile):
             raise
 
 
-def create_profile_in_database(face_profile_name,
-                               database_path="../face_profiles/",
-                               clean_dir=False):
+def create_profile_in_database(face_profile_name: str,
+                               database_path: str = "../face_profiles/",
+                               clean_dir: bool = False):
     """
     Create a face profile directory in the database
 
@@ -293,7 +294,7 @@ def create_profile_in_database(face_profile_name,
     return face_profile_path
 
 
-def get_rotation_map(rotation):
+def get_rotation_map(rotation: int):
     """
     Takes in an angle rotation, and returns an optimized rotation map
 

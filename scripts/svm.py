@@ -21,7 +21,7 @@ import cv2
 
 import utils
 
-FACE_DIM = (32, 32)
+FACE_DIM = (50, 50)
 
 
 def error_rate(pred, actual):
@@ -165,7 +165,7 @@ def build_svc(face_profile_data, face_profile_name_index, face_profile_names):
     print("\nTest Error Rate:\t %.4f%%" % (rate * 100))
     print("Test Recognition Rate:\t%.4f%%" % ((1.0 - rate) * 100))
 
-    def plot_gallery(images, titles, n_row=3, n_col=4):
+    def plot_gallery(images, titles, n_row: int = 3, n_col: int = 4):
         """Helper function to plot a gallery of portraits"""
         plt.figure(figsize=(1.5 * n_col, 2 * n_row))
         plt.subplots_adjust(bottom=0, left=.01, right=.99, top=.90, hspace=.35)
