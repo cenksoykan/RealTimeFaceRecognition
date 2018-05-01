@@ -77,16 +77,15 @@ while RET:
         FACEFOUND = False
         for r in CURRENT_ROTATION_MAP:
             ROTATED_FRAME = ndimage.rotate(RESIZED_FRAME, r)
+            GRAY_FRAME = cv2.cvtColor(ROTATED_FRAME, cv2.COLOR_BGR2GRAY)
 
-            faces = utils.detect_faces(ROTATED_FRAME)
+            faces = utils.detect_faces(GRAY_FRAME)
 
             if len(faces):
                 for f in faces:
                     # Crop out the face
                     x, y, w, h = [v for v in f]
-                    CROPPED_FACE = ROTATED_FRAME[y:y + h, x:x + w]
-                    CROPPED_FACE = cv2.cvtColor(CROPPED_FACE,
-                                                cv2.COLOR_BGR2GRAY)
+                    CROPPED_FACE = GRAY_FRAME[y:y + h, x:x + w]
                     CROPPED_FACE = cv2.flip(CROPPED_FACE, 1)
 
                     name_to_display = predict(CROPPED_FACE)
